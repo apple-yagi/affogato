@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { getAffectedTestFiles } from "./get-affected-tests.ts";
 import { Project } from "ts-morph";
 import path from "node:path";
@@ -18,9 +17,9 @@ test("basic case: only test file depending on changed file is returned", () => {
 
   const result = getAffectedTestFiles(changedFiles, project);
 
-  assert.deepEqual(result.sort(), [
-    path.resolve("fixtures/src/foo.test.ts"),
-    path.resolve("fixtures/src/hoge.test.ts"),
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
   ]);
 });
 
@@ -31,5 +30,5 @@ test("basic case: changing unrelated file returns nothing", () => {
 
   const result = getAffectedTestFiles(changedFiles, project);
 
-  assert.deepEqual(result, []);
+  expect(result).toStrictEqual([]);
 });

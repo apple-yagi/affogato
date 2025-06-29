@@ -22,5 +22,6 @@
     "allowUnusedLabels": true,
     "allowUnreachableCode": true
   },
+  "include": ["src"],
   "exclude": ["fixtures", "dist"]
 }
