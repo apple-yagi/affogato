@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "build": "rm -rf dist && ncc build src/index.ts --license licenses.txt -o dist",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
