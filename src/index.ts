@@ -5,6 +5,8 @@ import path from "node:path";
 
 const run = async (tsconfig: string) => {
   const changedFiles = getChangedFiles(tsconfig);
+  console.log("Changed files:", changedFiles);
+
   const affectedTestFiles = getAffectedTestFiles(
     changedFiles,
     path.resolve(tsconfig)
@@ -15,7 +17,7 @@ const run = async (tsconfig: string) => {
 
 (async () => {
   try {
-    const tsconfig = getInput("tsconfig") || "tsconfig.json";
+    const tsconfig = getInput("tsconfig");
     const results = await run(tsconfig);
 
     if (results.length === 0) {
