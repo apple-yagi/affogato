@@ -21,5 +21,6 @@ jobs:
         with:
           tsconfig: ./fixtures/tsconfig.json
         id: test_scope
-      - run: pnpm run test "${{ steps.test_scope.outputs.affected_tests }}"
+      - if: steps.test_scope.outputs.affected_tests != ''
+        run: node --experimental-strip-types --test ${{ steps.test_scope.outputs.affected_tests }}
       - run: pnpm run build
