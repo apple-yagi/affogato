@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npx corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: apple-yagi/test-scope@v0.0.1
+        with:
+          tsconfig: ./fixtures/tsconfig.json
+        id: test_scope
+      - run: pnpm run test "${{ steps.test_scope.outputs.affected_tests }}"
+      - run: pnpm run build
