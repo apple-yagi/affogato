@@ -5,6 +5,7 @@
     "strict": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
+    "rewriteRelativeImportExtensions": true,
     "target": "ES2021",
     "module": "NodeNext",
     "declaration": true,
@@ -21,5 +22,6 @@
     "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": true,
     "allowUnreachableCode": true
-  }
+  },
+  "exclude": ["fixtures"]
 }
