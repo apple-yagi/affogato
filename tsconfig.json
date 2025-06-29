@@ -23,5 +23,5 @@
     "allowUnusedLabels": true,
     "allowUnreachableCode": true
   },
-  "exclude": ["fixtures"]
+  "exclude": ["fixtures", "dist"]
 }

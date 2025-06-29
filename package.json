@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "test": "node --experimental-strip-types --test src/**/*.test.ts"
   },
   "keywords": [],
