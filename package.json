@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && ncc build src/index.ts --license licenses.txt -o dist",
     "test": "node --experimental-strip-types --test src/**/*.test.ts"
   },
   "keywords": [],
@@ -14,6 +14,7 @@
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {
     "@types/node": "^24.0.7",
+    "@vercel/ncc": "^0.38.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {
