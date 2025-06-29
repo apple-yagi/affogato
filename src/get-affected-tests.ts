@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Project, SourceFile } from "ts-morph";
 
 export function getAffectedTestFiles(
@@ -27,9 +28,11 @@ export function getAffectedTestFiles(
     }
   }
 
+  const absChangedFiles = changedFiles.map((f) => path.resolve(f));
+
   const affected = new Set<string>();
   const visited = new Set<string>();
-  const queue = [...changedFiles];
+  const queue = [...absChangedFiles];
 
   while (queue.length > 0) {
     const current = queue.pop();
@@ -48,5 +51,7 @@ export function getAffectedTestFiles(
     }
   }
 
-  return Array.from(affected).filter((f) => /\.test\.(ts|tsx)$/.test(f));
+  return Array.from(affected)
+    .filter((f) => /\.test\.(ts|tsx)$/.test(f))
+    .map((absPath) => path.relative(process.cwd(), absPath));
 }

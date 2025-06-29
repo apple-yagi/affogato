@@ -12,11 +12,14 @@ const run = async (tsconfig: string, token: string) => {
   }
 
   console.log("Changed files:", changedFiles);
+  console.log("Using tsconfig:", path.resolve(tsconfig));
 
   const affectedTestFiles = getAffectedTestFiles(
     changedFiles,
     path.resolve(tsconfig)
   );
+
+  console.log("Affected test files:", affectedTestFiles);
 
   return affectedTestFiles;
 };
