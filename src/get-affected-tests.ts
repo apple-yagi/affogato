@@ -51,6 +51,8 @@ export function getAffectedTestFiles(
     }
   }
 
+  console.log("test");
+
   return Array.from(affected)
     .filter((f) => /\.test\.(ts|tsx)$/.test(f))
     .map((absPath) => path.relative(process.cwd(), absPath));
