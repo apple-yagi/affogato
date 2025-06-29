@@ -12,6 +12,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          fetch-tags: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -21,6 +24,8 @@ jobs:
       - run: pnpm run typecheck
       - uses: apple-yagi/test-scope@v0.0.1
         id: test_scope
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - if: steps.test_scope.outputs.affected_tests != ''
         run: node --experimental-strip-types --test ${{ steps.test_scope.outputs.affected_tests }}
       - run: pnpm run build

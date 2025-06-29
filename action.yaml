@@ -6,6 +6,9 @@ inputs:
     description: "Path to the tsconfig.json file"
     required: true
     default: "tsconfig.json"
+  token:
+    description: "GitHub token for API access."
+    required: true
 outputs:
   affected_tests:
     description: "List of affected test files"

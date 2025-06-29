@@ -3,8 +3,8 @@ import { getAffectedTestFiles } from "./get-affected-tests.ts";
 import { getInput, setFailed, setOutput } from "@actions/core";
 import path from "node:path";
 
-const run = async (tsconfig: string) => {
-  const changedFiles = getChangedFiles();
+const run = async (tsconfig: string, token: string) => {
+  const changedFiles = await getChangedFiles(token);
 
   if (changedFiles.length === 0) {
     console.log("No changed files found.");
@@ -24,7 +24,8 @@ const run = async (tsconfig: string) => {
 (async () => {
   try {
     const tsconfig = getInput("tsconfig");
-    const results = await run(tsconfig);
+    const token = getInput("token", { required: true });
+    const results = await run(tsconfig, token);
 
     if (results.length === 0) {
       console.log("No affected test files found.");

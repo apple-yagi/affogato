@@ -1,1 +1,1 @@
-export declare function getChangedFiles(baseRef?: string): string[];
+export declare function getChangedFiles(token: string): Promise<string[]>;
