@@ -17,6 +17,7 @@ jobs:
           node-version: 20
       - run: npx corepack enable pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm oxlint
       - run: pnpm run typecheck
       - uses: apple-yagi/test-scope@v0.0.1
         with:

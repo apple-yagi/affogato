@@ -1,0 +1,4 @@
+{
+  "plugins": ["unicorn", "typescript", "oxc", "node", "import"],
+  "ignorePatterns": ["dist"]
+}
