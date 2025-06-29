@@ -4,7 +4,13 @@ import { getInput, setFailed, setOutput } from "@actions/core";
 import path from "node:path";
 
 const run = async (tsconfig: string) => {
-  const changedFiles = getChangedFiles(tsconfig);
+  const changedFiles = getChangedFiles();
+
+  if (changedFiles.length === 0) {
+    console.log("No changed files found.");
+    return [];
+  }
+
   console.log("Changed files:", changedFiles);
 
   const affectedTestFiles = getAffectedTestFiles(
