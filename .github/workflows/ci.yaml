@@ -20,8 +20,6 @@ jobs:
       - run: pnpm oxlint
       - run: pnpm run typecheck
       - uses: apple-yagi/test-scope@v0.0.1
-        with:
-          tsconfig: ./fixtures/tsconfig.json
         id: test_scope
       - if: steps.test_scope.outputs.affected_tests != ''
         run: node --experimental-strip-types --test ${{ steps.test_scope.outputs.affected_tests }}
