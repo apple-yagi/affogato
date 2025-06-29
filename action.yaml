@@ -1,0 +1,17 @@
+name: "Test Scope"
+author: "Ryuya Yanagi"
+description: "Run only the tests affected by your TypeScript changes."
+inputs:
+  tsconfig:
+    description: "Path to the tsconfig.json file"
+    required: true
+    default: "tsconfig.json"
+outputs:
+  affected_tests:
+    description: "List of affected test files"
+branding:
+  icon: code
+  color: gray-dark
+runs:
+  using: "node20"
+  main: "dist/index.js"
