@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { getAffectedTestFiles } from "./get-affected-tests.ts";
+import { getAffectedTestFiles } from "./get-affected-tests.js";
 import { Project } from "ts-morph";
 import path from "node:path";
 

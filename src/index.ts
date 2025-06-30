@@ -1,5 +1,5 @@
-import { getChangedFiles } from "./get-changed-files.ts";
-import { getAffectedTestFiles } from "./get-affected-tests.ts";
+import { getChangedFiles } from "./get-changed-files.js";
+import { getAffectedTestFiles } from "./get-affected-tests.js";
 import { getInput, setFailed, setOutput } from "@actions/core";
 import path from "node:path";
 
