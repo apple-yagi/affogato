@@ -27,5 +27,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - if: steps.test_scope.outputs.affected_tests != ''
-        run: node --experimental-strip-types --test ${{ steps.test_scope.outputs.affected_tests }}
+        run: pnpm run test ${{ steps.test_scope.outputs.affected_tests }}
       - run: pnpm run build

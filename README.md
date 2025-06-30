@@ -2,7 +2,7 @@
 
 ## Overview
 
-**TestScope** detects which unit test files (`.test.ts` / `.test.tsx`) are affected by changed TypeScript files based on Git diffs.  
+**TestScope** detects which unit test files (`.test.ts` / `.test.tsx` / `.spec.ts` / `.spec.tsx`) are affected by changed TypeScript files based on Git diffs.  
 It uses `ts-morph` to analyze TypeScript import dependencies and accurately identifies tests impacted by your code changes.
 
 This helps you run only relevant tests, speeding up your CI and local workflows.
