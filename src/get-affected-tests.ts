@@ -5,10 +5,13 @@ export function getAffectedTestFiles(
   changedFiles: string[],
   projectOrPath: string | Project = "tsconfig.json"
 ): string[] {
-  const project =
-    typeof projectOrPath === "string"
-      ? new Project({ tsConfigFilePath: projectOrPath })
-      : projectOrPath;
+  const isProjectPath = typeof projectOrPath === "string";
+  const tsConfigPath = isProjectPath ? path.resolve(projectOrPath) : undefined;
+  const basePath = isProjectPath ? path.dirname(tsConfigPath!) : process.cwd();
+
+  const project = isProjectPath
+    ? new Project({ tsConfigFilePath: tsConfigPath! })
+    : projectOrPath;
 
   const fileMap = new Map<string, SourceFile>();
   const reverseDeps = new Map<string, Set<string>>();
@@ -53,5 +56,5 @@ export function getAffectedTestFiles(
 
   return Array.from(affected)
     .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
-    .map((absPath) => path.relative(process.cwd(), absPath));
+    .map((absPath) => path.relative(basePath, absPath));
 }

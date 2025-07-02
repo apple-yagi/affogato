@@ -23,10 +23,37 @@ test("basic case: only test file depending on changed file is returned", () => {
   ]);
 });
 
+test("basic case: multiple changed files return all affected tests", () => {
+  const project = loadProjectFromCase();
+
+  const changedFiles = [
+    path.resolve("fixtures/src/foo.ts"),
+    path.resolve("fixtures/src/bar.ts"),
+  ];
+
+  const result = getAffectedTestFiles(changedFiles, project);
+
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/bar.test.ts",
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
+  ]);
+});
+
+test("basic case: pass tsconfig path.", () => {
+  const tsconfig = path.resolve("fixtures", "tsconfig.json");
+
+  const changedFiles = [path.resolve("fixtures/src/foo.ts")];
+
+  const result = getAffectedTestFiles(changedFiles, tsconfig);
+
+  expect(result.sort()).toStrictEqual(["src/foo.test.ts", "src/hoge.test.ts"]);
+});
+
 test("basic case: changing unrelated file returns nothing", () => {
   const project = loadProjectFromCase();
 
-  const changedFiles = [path.resolve("fixtures/src/bar.ts")];
+  const changedFiles = [path.resolve("fixtures/src/no-test.ts")];
 
   const result = getAffectedTestFiles(changedFiles, project);
 
