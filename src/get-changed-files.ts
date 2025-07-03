@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { context } from "@actions/github";
 
 export async function getChangedFiles(token: string): Promise<string[]> {
@@ -26,26 +26,30 @@ export async function getChangedFiles(token: string): Promise<string[]> {
   // Fallback if merge base is unavailable (e.g., direct push)
   if (!mergeBaseSHA || mergeBaseSHA === "null") {
     console.warn("⚠️ Could not retrieve merge base. Falling back to HEAD^");
-    mergeBaseSHA = execSync("git rev-parse HEAD^", {
+    // ⚠️ Use execFileSync with argument array to avoid command-line injection
+    // This prevents shell interpretation of user-controlled input like SHAs
+    mergeBaseSHA = execFileSync("git", ["rev-parse", "HEAD^"], {
       encoding: "utf-8",
     }).trim();
   }
 
-  // Ensure both SHAs are available
   if (!mergeBaseSHA || !headSHA) {
     throw new Error("Could not determine base or head commit SHA.");
   }
 
-  // Fetch both commits in case they aren't in the shallow clone
-  execSync(`git fetch --depth=1 origin ${mergeBaseSHA} ${headSHA}`, {
+  // ⚠️ Safe usage: avoid interpolation in shell command by passing args separately
+  execFileSync("git", ["fetch", "--depth=1", "origin", mergeBaseSHA, headSHA], {
     stdio: "inherit",
   });
 
-  // Get changed files
-  const changedFiles = execSync(
-    `git diff --name-only ${mergeBaseSHA}..${headSHA}`,
+  // ⚠️ Command-line injection safe: separate args prevent injection of malicious SHAs
+  const diffOutput = execFileSync(
+    "git",
+    ["diff", "--name-only", `${mergeBaseSHA}..${headSHA}`],
     { encoding: "utf-8" }
-  )
+  );
+
+  const changedFiles = diffOutput
     .split("\n")
     .map((file) => file.trim())
     .filter((f) => /\.(ts|tsx)$/.test(f));
