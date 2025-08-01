@@ -59,3 +59,21 @@ test("basic case: changing unrelated file returns nothing", () => {
 
   expect(result).toStrictEqual([]);
 });
+
+test("deleted test files are filtered out from affected tests", () => {
+  const project = loadProjectFromCase();
+
+  // Include a non-existent test file in the changed files list
+  const changedFiles = [
+    path.resolve("fixtures/src/foo.ts"),
+    path.resolve("fixtures/src/deleted.test.ts"), // This file doesn't exist
+  ];
+
+  const result = getAffectedTestFiles(changedFiles, project);
+
+  // Should only return existing test files affected by foo.ts
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
+  ]);
+});
