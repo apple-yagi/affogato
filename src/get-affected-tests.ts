@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { Project, SourceFile } from "ts-morph";
 
 export function getAffectedTestFiles(
@@ -57,6 +58,7 @@ export function getAffectedTestFiles(
   return (
     Array.from(affected)
       .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
+      .filter((f) => fs.existsSync(f)) // Filter out deleted files
       .map((absPath) => path.relative(basePath, absPath))
       // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
       .filter((f) => !f.startsWith(".."))
