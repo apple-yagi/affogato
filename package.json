@@ -1,6 +1,6 @@
 {
   "name": "test-scope",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Run only the tests affected by your TypeScript changes.",
   "main": "dist/index.js",
   "type": "commonjs",
@@ -15,7 +15,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.12.4",
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "devDependencies": {
     "@types/node": "^24.0.7",
