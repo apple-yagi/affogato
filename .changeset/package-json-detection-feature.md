@@ -1,7 +1,8 @@
 # Add package.json dependency change detection with monorepo support
 
 ---
-"test-scope": minor
+
+"affogato": minor
 ---
 
 Add package.json dependency change detection with monorepo support

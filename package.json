@@ -1,5 +1,5 @@
 {
-  "name": "test-scope",
+  "name": "affogato",
   "version": "0.0.3",
   "description": "Run only the tests affected by your TypeScript changes.",
   "main": "dist/index.js",
@@ -13,7 +13,7 @@
     "changeset:version": "changeset version",
     "changeset:publish": "pnpm run build && changeset publish"
   },
-  "repository": "git@github.com:apple-yagi/test-scope.git",
+  "repository": "git@github.com:apple-yagi/affogato.git",
   "author": "apple-yagi <applesryu@gmail.com>",
   "license": "MIT",
   "packageManager": "pnpm@10.12.4",
