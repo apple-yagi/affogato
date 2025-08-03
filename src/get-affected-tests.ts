@@ -5,8 +5,9 @@ import { Project, SourceFile } from "ts-morph";
 export function getAffectedTestFiles(
   changedFiles: string[],
   projectOrPath: string | Project = "tsconfig.json",
-  changedPackages: string[] = []
-): string[] {
+  changedPackages: string[] = [],
+  runAllTestsPackages: string[] = []
+): { affectedTests: string[], shouldRunAllTests: boolean } {
   const isProjectPath = typeof projectOrPath === "string";
   const tsConfigPath = isProjectPath ? path.resolve(projectOrPath) : undefined;
   const basePath = isProjectPath ? path.dirname(tsConfigPath!) : process.cwd();
@@ -14,6 +15,20 @@ export function getAffectedTestFiles(
   const project = isProjectPath
     ? new Project({ tsConfigFilePath: tsConfigPath! })
     : projectOrPath;
+
+  // Check if any changed package should trigger running all tests
+  const shouldRunAllTests = changedPackages.some(pkg => 
+    runAllTestsPackages.includes(pkg)
+  );
+
+  if (shouldRunAllTests) {
+    console.log(`Running all tests because of changed packages: ${changedPackages.filter(pkg => runAllTestsPackages.includes(pkg)).join(', ')}`);
+    
+    return {
+      affectedTests: [],
+      shouldRunAllTests: true
+    };
+  }
 
   const fileMap = new Map<string, SourceFile>();
   const reverseDeps = new Map<string, Set<string>>();
@@ -90,14 +105,17 @@ export function getAffectedTestFiles(
     }
   }
 
-  return (
-    Array.from(affected)
-      .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
-      .filter((f) => fs.existsSync(f)) // Filter out deleted files
-      .map((absPath) => path.relative(basePath, absPath))
-      // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
-      .filter((f) => !f.startsWith(".."))
-  );
+  const affectedTests = Array.from(affected)
+    .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
+    .filter((f) => fs.existsSync(f)) // Filter out deleted files
+    .map((absPath) => path.relative(basePath, absPath))
+    // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
+    .filter((f) => !f.startsWith(".."));
+
+  return {
+    affectedTests,
+    shouldRunAllTests: false
+  };
 }
 
 export function getFilesUsingPackages(

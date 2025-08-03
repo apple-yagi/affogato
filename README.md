@@ -15,11 +15,15 @@
 - 🔍 Detects affected files via `git diff`
 - 🚀 Runs only necessary unit tests to save CI time
 - ✅ Supports pull requests and push events
+- 🧪 Configurable full test execution - runs all tests when specified packages are updated
+- 📝 Flexible configuration via input parameters or config files
 - ☕️ Minimal configuration, high impact
 
 ---
 
 ## 🛠 Usage
+
+### Basic Usage
 
 Add this to your GitHub Actions workflow:
 
@@ -39,28 +43,75 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: npm install
-      - run: npm run test ${{ steps.affogato.outputs.affected_tests }}
+      # Run all tests if run_all_tests is true, otherwise run only affected tests
+      - if: steps.affogato.outputs.run_all_tests == 'true'
+        run: npm run test
+      - if: steps.affogato.outputs.run_all_tests != 'true' && steps.affogato.outputs.affected_tests != ''
+        run: npm run test ${{ steps.affogato.outputs.affected_tests }}
+```
+
+### Advanced Usage with Package Configuration
+
+Configure packages that should trigger running all tests:
+
+```yaml
+- uses: apple-yagi/affogato@v1
+  id: affogato
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    run_all_tests_packages: "vitest,playwright,@testing-library/react,jest"
+```
+
+Or use a configuration file:
+
+**affogato.config.json**
+
+```json
+{
+  "runAllTestsPackages": [
+    "vitest",
+    "playwright", 
+    "@testing-library/react",
+    "jest",
+    "@storybook/react"
+  ]
+}
+```
+
+```yaml
+- uses: apple-yagi/affogato@v1
+  id: affogato
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    run_all_tests_config: "affogato.config.json"
 ```
 
 ## ⚙️ Inputs
 
-| Name       | Description                                                          | Required | Default           |
-| ---------- | -------------------------------------------------------------------- | -------- | ----------------- |
-| `token`    | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes    | —                 |
-| `tsconfig` | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No     | `./tsconfig.json` |
+| Name                     | Description                                                           | Required | Default           |
+| ------------------------ | --------------------------------------------------------------------- | -------- | ----------------- |
+| `token`                  | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes    | —                 |
+| `tsconfig`               | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No     | `./tsconfig.json` |
+| `run_all_tests_packages` | Comma-separated list of package names that should trigger running all tests when updated | ❌ No | — |
+| `run_all_tests_config`   | Path to configuration file containing packages that should trigger running all tests | ❌ No | — |
 
 ## 📤 Outputs
 
-| Name             | Description                               |
-| ---------------- | ----------------------------------------- |
-| `affected_tests` | Space-separated list of test files to run |
+| Name             | Description                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| `affected_tests` | Space-separated list of test files to run                      |
+| `run_all_tests`  | Flag indicating whether all tests should be run (`true`/`false`) |
 
 ## 🧪 How It Works
 
-1. affogato uses the GitHub API (via token) to detect changed files between the base and head commits.
-2. If tsconfig is provided (or defaulted), it parses the TypeScript project and resolves module dependencies.
-3. Based on the dependency graph, it finds test files (e.g. *.(test|spec).(ts|tsx)) affected by the change.
-4. The list of affected test files is returned via the affected_tests output.
+1. **File Detection**: Uses the GitHub API to detect changed files between base and head commits
+2. **Package Analysis**: Detects changes in `package.json` files to identify updated dependencies
+3. **Smart Test Strategy**:
+   - If a configured test tool package (e.g., `vitest`, `playwright`) is updated → runs all tests (`run_all_tests: true`)
+   - Otherwise → analyzes TypeScript dependency graph to find affected test files
+4. **Dependency Resolution**: Parses the TypeScript project using `tsconfig.json` to build a dependency graph
+5. **Test File Discovery**: Finds test files (`*.(test|spec).(ts|tsx)`) affected by changes
+6. **Output Generation**: Returns either a list of specific test files or a flag to run all tests
 
 ## 📄 License
 

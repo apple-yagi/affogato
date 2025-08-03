@@ -72,7 +72,7 @@ test("getAffectedTestFiles: includes tests for files using changed packages", ()
   const result = getAffectedTestFiles(changedFiles, project, changedPackages);
   
   // Should include test files for components using React
-  expect(result.some((file: string) => file.includes("react-component.test"))).toBe(true);
+  expect(result.affectedTests.some((file: string) => file.includes("react-component.test"))).toBe(true);
 });
 
 test("getAffectedTestFiles: combines changed files and changed packages", () => {
@@ -84,8 +84,8 @@ test("getAffectedTestFiles: combines changed files and changed packages", () => 
   const result = getAffectedTestFiles(changedFiles, project, changedPackages);
   
   // Should include tests for both changed files and files using changed packages
-  expect(result.some((file: string) => file.includes("foo.test"))).toBe(true);
-  expect(result.some((file: string) => file.includes("react-component.test"))).toBe(true);
+  expect(result.affectedTests.some((file: string) => file.includes("foo.test"))).toBe(true);
+  expect(result.affectedTests.some((file: string) => file.includes("react-component.test"))).toBe(true);
 });
 
 test("basic case: only test file depending on changed file is returned", () => {
@@ -95,7 +95,7 @@ test("basic case: only test file depending on changed file is returned", () => {
 
   const result = getAffectedTestFiles(changedFiles, project);
 
-  expect(result.sort()).toStrictEqual([
+  expect(result.affectedTests.sort()).toStrictEqual([
     "fixtures/src/foo.test.ts",
     "fixtures/src/hoge.test.ts",
   ]);
@@ -111,7 +111,7 @@ test("basic case: multiple changed files return all affected tests", () => {
 
   const result = getAffectedTestFiles(changedFiles, project);
 
-  expect(result.sort()).toStrictEqual([
+  expect(result.affectedTests.sort()).toStrictEqual([
     "fixtures/src/bar.test.ts",
     "fixtures/src/foo.test.ts",
     "fixtures/src/hoge.test.ts",
@@ -125,7 +125,7 @@ test("basic case: pass tsconfig path.", () => {
 
   const result = getAffectedTestFiles(changedFiles, tsconfig);
 
-  expect(result.sort()).toStrictEqual(["src/foo.test.ts", "src/hoge.test.ts"]);
+  expect(result.affectedTests.sort()).toStrictEqual(["src/foo.test.ts", "src/hoge.test.ts"]);
 });
 
 test("basic case: changing unrelated file returns nothing", () => {
@@ -135,7 +135,7 @@ test("basic case: changing unrelated file returns nothing", () => {
 
   const result = getAffectedTestFiles(changedFiles, project);
 
-  expect(result).toStrictEqual([]);
+  expect(result.affectedTests).toStrictEqual([]);
 });
 
 test("deleted test files are filtered out from affected tests", () => {
@@ -150,7 +150,7 @@ test("deleted test files are filtered out from affected tests", () => {
   const result = getAffectedTestFiles(changedFiles, project);
 
   // Should only return existing test files affected by foo.ts
-  expect(result.sort()).toStrictEqual([
+  expect(result.affectedTests.sort()).toStrictEqual([
     "fixtures/src/foo.test.ts",
     "fixtures/src/hoge.test.ts",
   ]);
@@ -168,6 +168,52 @@ test("getAffectedTestFiles: includes transitive dependencies from package change
   // Should include both direct and indirect dependencies:
   // 1. react-component.test.ts (direct: react-component.ts imports react)
   // 2. use-react-components.test.ts (indirect: use-react-components.ts imports react-component.ts which uses react)
-  expect(result.some((file: string) => file.includes("react-component.test"))).toBe(true);
-  expect(result.some((file: string) => file.includes("use-react-components.test"))).toBe(true);
+  expect(result.affectedTests.some((file: string) => file.includes("react-component.test"))).toBe(true);
+  expect(result.affectedTests.some((file: string) => file.includes("use-react-components.test"))).toBe(true);
+});
+
+test("getAffectedTestFiles: runs all tests when runAllTestsPackages matches changed package", () => {
+  const project = loadProjectFromCase();
+  
+  const result = getAffectedTestFiles(
+    [],
+    project,
+    ["vitest"], // Changed package
+    ["vitest", "playwright"] // Packages that should trigger running all tests
+  );
+  
+  // Should return shouldRunAllTests as true
+  expect(result.shouldRunAllTests).toBe(true);
+  // affectedTests should be empty when running all tests
+  expect(result.affectedTests).toEqual([]);
+});
+
+test("getAffectedTestFiles: normal behavior when runAllTestsPackages doesn't match", () => {
+  const project = loadProjectFromCase();
+  
+  const result = getAffectedTestFiles(
+    [],
+    project,
+    ["react"], // Changed package
+    ["vitest", "playwright"] // Packages that should trigger running all tests
+  );
+  
+  // Should follow normal logic for react package changes
+  expect(result.shouldRunAllTests).toBe(false);
+  expect(Array.isArray(result.affectedTests)).toBe(true);
+});
+
+test("getAffectedTestFiles: combines runAllTestsPackages from multiple sources", () => {
+  const project = loadProjectFromCase();
+  
+  const result = getAffectedTestFiles(
+    [],
+    project,
+    ["custom-test-tool"], // Changed package
+    ["vitest", "playwright", "custom-test-tool"] // Packages that should trigger running all tests
+  );
+  
+  // Should run all tests because custom-test-tool is in the runAllTestsPackages list
+  expect(result.shouldRunAllTests).toBe(true);
+  expect(result.affectedTests).toEqual([]);
 });
