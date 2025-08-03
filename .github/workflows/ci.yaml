@@ -24,6 +24,8 @@ jobs:
           node-version: 22
       - run: npx corepack enable pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run format:check
+      - run: pnpm run editorconfig
       - run: pnpm oxlint
       - run: pnpm run typecheck
       - uses: apple-yagi/affogato@v0.0.3

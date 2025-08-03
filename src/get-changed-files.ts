@@ -95,7 +95,7 @@ export async function getChangedFilesWithPackages(
 
   return {
     changedPackages: [...new Set(changedPackages)],
-    changedFiles
+    changedFiles,
   };
 }
 
@@ -106,7 +106,7 @@ function parsePackageJsonDiff(diff: string): string[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
-    
+
     // Look for lines that show dependency changes
     // Example: -    "react": "^17.0.0"
     //          +    "react": "^18.0.0"
@@ -130,16 +130,22 @@ function isInDependenciesSection(lines: string[], lineIndex: number): boolean {
   for (let i = lineIndex; i >= 0; i--) {
     const line = lines[i];
     if (!line) continue;
-    
+
     const trimmedLine = line.trim();
-    if (trimmedLine.includes('"dependencies":') || 
-        trimmedLine.includes('"devDependencies":') ||
-        trimmedLine.includes('"peerDependencies":') ||
-        trimmedLine.includes('"optionalDependencies":')) {
+    if (
+      trimmedLine.includes('"dependencies":') ||
+      trimmedLine.includes('"devDependencies":') ||
+      trimmedLine.includes('"peerDependencies":') ||
+      trimmedLine.includes('"optionalDependencies":')
+    ) {
       return true;
     }
     // If we hit another section or closing brace, we're not in dependencies
-    if (trimmedLine.startsWith('"') && trimmedLine.includes('":') && !trimmedLine.includes('dependencies')) {
+    if (
+      trimmedLine.startsWith('"') &&
+      trimmedLine.includes('":') &&
+      !trimmedLine.includes("dependencies")
+    ) {
       return false;
     }
   }
@@ -152,11 +158,13 @@ function findWorkspaceRoot(startPath: string = process.cwd()): string | null {
 
   while (currentPath !== root) {
     const packageJsonPath = path.join(currentPath, "package.json");
-    
+
     if (fs.existsSync(packageJsonPath)) {
       try {
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-        
+        const packageJson = JSON.parse(
+          fs.readFileSync(packageJsonPath, "utf-8")
+        );
+
         // Check if it's a workspace root
         if (packageJson.workspaces || packageJson.pnpm?.workspace) {
           return currentPath;
@@ -165,12 +173,12 @@ function findWorkspaceRoot(startPath: string = process.cwd()): string | null {
         // Ignore parsing errors and continue searching
       }
     }
-    
+
     const parentPath = path.dirname(currentPath);
     if (parentPath === currentPath) break;
     currentPath = parentPath;
   }
-  
+
   return null;
 }
 
@@ -179,19 +187,22 @@ export async function getPackageJsonChangesWithWorkspace(
   tsConfigPath: string = "tsconfig.json"
 ): Promise<{ changedPackages: string[]; changedFiles: string[] }> {
   const result = await getChangedFilesWithPackages(token);
-  
+
   // If no package changes found, check workspace root
   if (result.changedPackages.length === 0) {
     const projectRoot = path.dirname(path.resolve(tsConfigPath));
     const workspaceRoot = findWorkspaceRoot(projectRoot);
-    
+
     if (workspaceRoot && workspaceRoot !== projectRoot) {
       // Check if workspace root package.json has changes
-      const workspaceResult = await getWorkspaceRootChanges(token, workspaceRoot);
+      const workspaceResult = await getWorkspaceRootChanges(
+        token,
+        workspaceRoot
+      );
       result.changedPackages.push(...workspaceResult.changedPackages);
     }
   }
-  
+
   return result;
 }
 
@@ -204,10 +215,13 @@ async function getWorkspaceRootChanges(
     const mergeBaseSHA = execFileSync("git", ["rev-parse", "HEAD^"], {
       encoding: "utf-8",
     }).trim();
-    
+
     const headSHA = context.sha;
-    const workspacePackageJson = path.relative(process.cwd(), path.join(workspaceRoot, "package.json"));
-    
+    const workspacePackageJson = path.relative(
+      process.cwd(),
+      path.join(workspaceRoot, "package.json")
+    );
+
     const packageDiff = execFileSync(
       "git",
       ["diff", `${mergeBaseSHA}..${headSHA}`, workspacePackageJson],

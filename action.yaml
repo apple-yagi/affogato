@@ -9,9 +9,19 @@ inputs:
   token:
     description: "GitHub token for API access."
     required: true
+  run_all_tests_packages:
+    description: "Comma-separated list of package names that should trigger running all tests when updated"
+    required: false
+    default: ""
+  run_all_tests_config:
+    description: "Path to configuration file containing packages that should trigger running all tests"
+    required: false
+    default: ""
 outputs:
   affected_tests:
     description: "List of affected test files"
+  run_all_tests:
+    description: "Flag indicating whether all tests should be run"
 branding:
   icon: code
   color: gray-dark

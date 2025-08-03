@@ -5,8 +5,9 @@ import { Project, SourceFile } from "ts-morph";
 export function getAffectedTestFiles(
   changedFiles: string[],
   projectOrPath: string | Project = "tsconfig.json",
-  changedPackages: string[] = []
-): string[] {
+  changedPackages: string[] = [],
+  runAllTestsPackages: string[] = []
+): { affectedTests: string[]; shouldRunAllTests: boolean } {
   const isProjectPath = typeof projectOrPath === "string";
   const tsConfigPath = isProjectPath ? path.resolve(projectOrPath) : undefined;
   const basePath = isProjectPath ? path.dirname(tsConfigPath!) : process.cwd();
@@ -14,6 +15,22 @@ export function getAffectedTestFiles(
   const project = isProjectPath
     ? new Project({ tsConfigFilePath: tsConfigPath! })
     : projectOrPath;
+
+  // Check if any changed package should trigger running all tests
+  const shouldRunAllTests = changedPackages.some((pkg) =>
+    runAllTestsPackages.includes(pkg)
+  );
+
+  if (shouldRunAllTests) {
+    console.log(
+      `Running all tests because of changed packages: ${changedPackages.filter((pkg) => runAllTestsPackages.includes(pkg)).join(", ")}`
+    );
+
+    return {
+      affectedTests: [],
+      shouldRunAllTests: true,
+    };
+  }
 
   const fileMap = new Map<string, SourceFile>();
   const reverseDeps = new Map<string, Set<string>>();
@@ -59,24 +76,27 @@ export function getAffectedTestFiles(
 
   // Add files using changed packages
   if (changedPackages.length > 0) {
-    const filesUsingChangedPackages = getFilesUsingPackages(changedPackages, project);
+    const filesUsingChangedPackages = getFilesUsingPackages(
+      changedPackages,
+      project
+    );
     for (const file of filesUsingChangedPackages) {
       const absPath = path.resolve(basePath, file);
       affected.add(absPath);
-      
+
       // Also add files that depend on these files
       const dependents = reverseDeps.get(absPath);
       if (dependents) {
         const packageQueue = [absPath];
         const packageVisited = new Set<string>();
-        
+
         while (packageQueue.length > 0) {
           const current = packageQueue.pop();
           if (!current || packageVisited.has(current)) continue;
-          
+
           packageVisited.add(current);
           affected.add(current);
-          
+
           const currentDependents = reverseDeps.get(current);
           if (currentDependents) {
             for (const dep of currentDependents) {
@@ -90,14 +110,17 @@ export function getAffectedTestFiles(
     }
   }
 
-  return (
-    Array.from(affected)
-      .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
-      .filter((f) => fs.existsSync(f)) // Filter out deleted files
-      .map((absPath) => path.relative(basePath, absPath))
-      // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
-      .filter((f) => !f.startsWith(".."))
-  );
+  const affectedTests = Array.from(affected)
+    .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
+    .filter((f) => fs.existsSync(f)) // Filter out deleted files
+    .map((absPath) => path.relative(basePath, absPath))
+    // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
+    .filter((f) => !f.startsWith(".."));
+
+  return {
+    affectedTests,
+    shouldRunAllTests: false,
+  };
 }
 
 export function getFilesUsingPackages(
@@ -120,11 +143,11 @@ export function getFilesUsingPackages(
 
   for (const sf of project.getSourceFiles()) {
     const filePath = sf.getFilePath().toString();
-    
+
     const imports = sf.getImportDeclarations();
     for (const importDecl of imports) {
       const moduleSpecifier = importDecl.getModuleSpecifierValue();
-      
+
       // Check if any of the changed packages are used
       for (const packageName of packageNames) {
         if (isImportFromPackage(moduleSpecifier, packageName)) {
@@ -141,21 +164,24 @@ export function getFilesUsingPackages(
     .filter((f) => !f.startsWith(".."));
 }
 
-function isImportFromPackage(moduleSpecifier: string, packageName: string): boolean {
+function isImportFromPackage(
+  moduleSpecifier: string,
+  packageName: string
+): boolean {
   // Direct package import: "react"
   if (moduleSpecifier === packageName) {
     return true;
   }
-  
+
   // Subpath import: "react/jsx-runtime"
   if (moduleSpecifier.startsWith(packageName + "/")) {
     return true;
   }
-  
+
   // Scoped package: "@types/react"
   if (packageName.startsWith("@") && moduleSpecifier.startsWith(packageName)) {
     return true;
   }
-  
+
   return false;
 }
