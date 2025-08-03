@@ -1,6 +1,6 @@
 {
   "name": "affogato",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run only the tests affected by your TypeScript changes.",
   "repository": "git@github.com:apple-yagi/affogato.git",
   "license": "MIT",
