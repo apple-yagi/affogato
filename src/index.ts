@@ -5,18 +5,19 @@ import { getInput, setFailed, setOutput } from "@actions/core";
 import path from "node:path";
 
 const run = async (
-  tsconfig: string, 
-  token: string, 
+  tsconfig: string,
+  token: string,
   runAllTestsPackages: string,
   runAllTestsConfig: string
 ) => {
-  const { changedFiles, changedPackages } = await getPackageJsonChangesWithWorkspace(token, tsconfig);
+  const { changedFiles, changedPackages } =
+    await getPackageJsonChangesWithWorkspace(token, tsconfig);
 
   if (changedFiles.length === 0 && changedPackages.length === 0) {
     console.log("No changed files or packages found.");
     return {
       affectedTests: [],
-      shouldRunAllTests: false
+      shouldRunAllTests: false,
     };
   }
 
@@ -27,7 +28,10 @@ const run = async (
   console.log("Using tsconfig:", path.resolve(tsconfig));
 
   // Get packages that should trigger running all tests
-  const allTestsPackages = getRunAllTestsPackages(runAllTestsPackages, runAllTestsConfig);
+  const allTestsPackages = getRunAllTestsPackages(
+    runAllTestsPackages,
+    runAllTestsConfig
+  );
   if (allTestsPackages.length > 0) {
     console.log("Packages configured to run all tests:", allTestsPackages);
   }
@@ -51,8 +55,13 @@ const run = async (
     const token = getInput("token", { required: true });
     const runAllTestsPackages = getInput("run_all_tests_packages");
     const runAllTestsConfig = getInput("run_all_tests_config");
-    
-    const results = await run(tsconfig, token, runAllTestsPackages, runAllTestsConfig);
+
+    const results = await run(
+      tsconfig,
+      token,
+      runAllTestsPackages,
+      runAllTestsConfig
+    );
 
     // Set the run_all_tests flag
     setOutput("run_all_tests", results.shouldRunAllTests.toString());

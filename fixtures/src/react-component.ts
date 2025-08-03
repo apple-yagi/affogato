@@ -5,6 +5,6 @@ export function createComponent() {
   const _debouncedFn = debounce(() => {
     console.log("debounced");
   }, 300);
-  
+
   return React.createElement("div", {}, "Hello");
 }

@@ -70,7 +70,7 @@ Or use a configuration file:
 {
   "runAllTestsPackages": [
     "vitest",
-    "playwright", 
+    "playwright",
     "@testing-library/react",
     "jest",
     "@storybook/react"
@@ -88,18 +88,18 @@ Or use a configuration file:
 
 ## ⚙️ Inputs
 
-| Name                     | Description                                                           | Required | Default           |
-| ------------------------ | --------------------------------------------------------------------- | -------- | ----------------- |
-| `token`                  | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes    | —                 |
-| `tsconfig`               | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No     | `./tsconfig.json` |
-| `run_all_tests_packages` | Comma-separated list of package names that should trigger running all tests when updated | ❌ No | — |
-| `run_all_tests_config`   | Path to configuration file containing packages that should trigger running all tests | ❌ No | — |
+| Name                     | Description                                                                              | Required | Default           |
+| ------------------------ | ---------------------------------------------------------------------------------------- | -------- | ----------------- |
+| `token`                  | GitHub Token to fetch changed files using the GitHub API                                 | ✅ Yes   | —                 |
+| `tsconfig`               | Path to the project's `tsconfig.json` used for dependency resolution                     | ❌ No    | `./tsconfig.json` |
+| `run_all_tests_packages` | Comma-separated list of package names that should trigger running all tests when updated | ❌ No    | —                 |
+| `run_all_tests_config`   | Path to configuration file containing packages that should trigger running all tests     | ❌ No    | —                 |
 
 ## 📤 Outputs
 
-| Name             | Description                                                     |
-| ---------------- | --------------------------------------------------------------- |
-| `affected_tests` | Space-separated list of test files to run                      |
+| Name             | Description                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| `affected_tests` | Space-separated list of test files to run                        |
 | `run_all_tests`  | Flag indicating whether all tests should be run (`true`/`false`) |
 
 ## 🧪 How It Works
@@ -107,8 +107,10 @@ Or use a configuration file:
 1. **File Detection**: Uses the GitHub API to detect changed files between base and head commits
 2. **Package Analysis**: Detects changes in `package.json` files to identify updated dependencies
 3. **Smart Test Strategy**:
-   - If a configured test tool package (e.g., `vitest`, `playwright`) is updated → runs all tests (`run_all_tests: true`)
-   - Otherwise → analyzes TypeScript dependency graph to find affected test files
+
+- If a configured test tool package (e.g., `vitest`, `playwright`) is updated → runs all tests (`run_all_tests: true`)
+- Otherwise → analyzes TypeScript dependency graph to find affected test files
+
 4. **Dependency Resolution**: Parses the TypeScript project using `tsconfig.json` to build a dependency graph
 5. **Test File Discovery**: Finds test files (`*.(test|spec).(ts|tsx)`) affected by changes
 6. **Output Generation**: Returns either a list of specific test files or a flag to run all tests

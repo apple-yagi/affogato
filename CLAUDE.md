@@ -11,15 +11,16 @@ affogato is a GitHub Action that analyzes changed files in pull requests and run
 ### Main Components
 
 - **`src/index.ts`**: GitHub Action entry point that orchestrates the workflow
-- **`src/get-changed-files.ts`**: GitHub API integration to detect changed files in PRs/commits  
+- **`src/get-changed-files.ts`**: GitHub API integration to detect changed files in PRs/commits
 - **`src/get-affected-tests.ts`**: Core dependency analysis engine using ts-morph
 - **`action.yaml`**: GitHub Action configuration and interface definition
 
 ### Key Algorithm (get-affected-tests.ts:4-64)
 
 The core logic builds a reverse dependency graph of all TypeScript files in the project:
+
 1. Parse all source files using ts-morph Project API
-2. Build reverse dependency map from import declarations  
+2. Build reverse dependency map from import declarations
 3. Use BFS traversal starting from changed files to find all affected files
 4. Filter results to only test files matching `*.(test|spec).(ts|tsx)` pattern
 5. Filter out monorepo external paths (starting with `..`)
@@ -57,8 +58,10 @@ Uses Vitest for testing with configuration in `vitest.config.mts`.
 ## GitHub Action Interface
 
 **Inputs:**
+
 - `token` (required): GitHub token for API access
 - `tsconfig` (optional): Path to tsconfig.json, defaults to "./tsconfig.json"
 
 **Outputs:**
+
 - `affected_tests`: Space-separated list of test file paths to run

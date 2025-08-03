@@ -31,7 +31,7 @@ export function getRunAllTestsPackages(
       .split(",")
       .map((pkg) => pkg.trim())
       .filter((pkg) => pkg.length > 0);
-    
+
     inputPackages.forEach((pkg) => packages.add(pkg));
   }
 
