@@ -122,8 +122,35 @@ export function parsePackageJsonDiff(diff: string): string[] {
       );
       if (match && match[1]) {
         const packageName = match[1].trim();
-        // Only include if it's in dependencies/devDependencies section
-        if (packageName && isInDependenciesSection(lines, i)) {
+        // For git diff of package.json, we can be more permissive
+        // Most package name-like fields in package.json are likely dependencies
+        // Exclude common non-dependency fields
+        const excludedFields = [
+          "name",
+          "version",
+          "description",
+          "main",
+          "module",
+          "types",
+          "scripts",
+          "keywords",
+          "author",
+          "license",
+          "homepage",
+          "repository",
+          "bugs",
+          "engines",
+          "browserslist",
+          "publishConfig",
+          "config",
+          "private",
+          "workspaces",
+          "files",
+          "bin",
+          "directories",
+        ];
+
+        if (packageName && !excludedFields.includes(packageName)) {
           changedPackages.push(packageName);
         }
       }
@@ -137,54 +164,64 @@ export function isInDependenciesSection(
   lines: string[],
   lineIndex: number
 ): boolean {
-  // Look backwards to find the section header
-  let foundDependenciesSection = false;
-  let braceDepth = 0;
+  // For git diff format, we need to look at the context differently
+  // Look backwards from the current line to find dependency section markers
 
-  // Track current depth relative to the line we're checking
   for (let i = lineIndex; i >= 0; i--) {
     const line = lines[i];
     if (!line) continue;
 
     const trimmedLine = line.trim();
 
-    // Count braces to understand nesting (going backwards, so reverse the counting)
-    const openBraces = (line.match(/\{/g) || []).length;
-    const closeBraces = (line.match(/\}/g) || []).length;
-    braceDepth += closeBraces - openBraces;
-
-    // Check if we found a dependencies section header at the current nesting level
+    // Check for dependency section headers in git diff context
+    // Git diff shows context lines without +/- prefix
     if (
-      braceDepth <= 0 &&
-      (trimmedLine.includes('"dependencies":') ||
-        trimmedLine.includes('"devDependencies":') ||
-        trimmedLine.includes('"peerDependencies":') ||
-        trimmedLine.includes('"optionalDependencies":') ||
-        trimmedLine.includes("'dependencies':") ||
-        trimmedLine.includes("'devDependencies':") ||
-        trimmedLine.includes("'peerDependencies':") ||
-        trimmedLine.includes("'optionalDependencies':"))
+      trimmedLine.includes('"dependencies":') ||
+      trimmedLine.includes('"devDependencies":') ||
+      trimmedLine.includes('"peerDependencies":') ||
+      trimmedLine.includes('"optionalDependencies":') ||
+      trimmedLine.includes("'dependencies':") ||
+      trimmedLine.includes("'devDependencies':") ||
+      trimmedLine.includes("'peerDependencies':") ||
+      trimmedLine.includes("'optionalDependencies':")
     ) {
-      foundDependenciesSection = true;
-      break;
+      return true;
     }
 
-    // If we hit another section at the same level and haven't found dependencies yet
+    // For git diff, also check lines with +/- prefix
+    const lineWithoutPrefix = trimmedLine.replace(/^[+-]\s*/, "");
     if (
-      braceDepth <= 0 &&
+      lineWithoutPrefix.includes('"dependencies":') ||
+      lineWithoutPrefix.includes('"devDependencies":') ||
+      lineWithoutPrefix.includes('"peerDependencies":') ||
+      lineWithoutPrefix.includes('"optionalDependencies":') ||
+      lineWithoutPrefix.includes("'dependencies':") ||
+      lineWithoutPrefix.includes("'devDependencies':") ||
+      lineWithoutPrefix.includes("'peerDependencies':") ||
+      lineWithoutPrefix.includes("'optionalDependencies':")
+    ) {
+      return true;
+    }
+
+    // Stop if we hit a different top-level section
+    if (
       trimmedLine.match(/^["'][^"'\n]+["']:\s*\{/) &&
       !trimmedLine.includes("dependencies")
     ) {
-      break;
+      return false;
     }
 
-    // If we go too deep in nesting, we're not in the right context
-    if (braceDepth > 2) {
-      break;
+    // Also check lines with +/- prefix for other sections
+    if (
+      lineWithoutPrefix.match(/^["'][^"'\n]+["']:\s*\{/) &&
+      !lineWithoutPrefix.includes("dependencies")
+    ) {
+      return false;
     }
   }
 
-  return foundDependenciesSection;
+  // If we haven't found a dependencies section by now, return false
+  return false;
 }
 
 export function findWorkspaceRoot(
