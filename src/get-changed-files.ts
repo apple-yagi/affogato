@@ -3,11 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { context } from "@actions/github";
 
-export async function getChangedFiles(token: string): Promise<string[]> {
-  const result = await getChangedFilesWithPackages(token);
-  return result.changedFiles;
-}
-
 export async function getChangedFilesWithPackages(
   token: string
 ): Promise<{ changedPackages: string[]; changedFiles: string[] }> {
@@ -207,30 +202,142 @@ export async function getPackageJsonChangesWithWorkspace(
 }
 
 async function getWorkspaceRootChanges(
-  _token: string,
+  token: string,
   workspaceRoot: string
 ): Promise<{ changedPackages: string[] }> {
   try {
-    // Use git directly since we already have the merge base from the main function
-    const mergeBaseSHA = execFileSync("git", ["rev-parse", "HEAD^"], {
-      encoding: "utf-8",
-    }).trim();
-
+    const repo = context.repo;
+    const isPR = !!context.payload.pull_request;
     const headSHA = context.sha;
+    let baseSHA: string | undefined;
+    let mergeBaseSHA: string | undefined;
+
+    if (isPR) {
+      baseSHA = context.payload.pull_request!.base.sha;
+
+      // GitHub Compare API
+      const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/compare/${baseSHA}...${headSHA}`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        mergeBaseSHA = data.merge_base_commit?.sha;
+      }
+    }
+
+    // Fallback: try to use GitHub API to get parent commit
+    if (!mergeBaseSHA || mergeBaseSHA === "null") {
+      try {
+        const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/commits/${headSHA}`;
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.parents && data.parents.length > 0) {
+            mergeBaseSHA = data.parents[0].sha;
+          }
+        }
+      } catch (apiError) {
+        console.warn(
+          "Failed to get parent commit via API for workspace root:",
+          apiError
+        );
+      }
+    }
+
+    // Final fallback: try git command only if we have more than one commit
+    if (!mergeBaseSHA || mergeBaseSHA === "null") {
+      try {
+        // Check if we have any commits at all
+        const commitCount = execFileSync(
+          "git",
+          ["rev-list", "--count", "HEAD"],
+          {
+            encoding: "utf-8",
+          }
+        ).trim();
+
+        if (parseInt(commitCount) > 1) {
+          mergeBaseSHA = execFileSync("git", ["rev-parse", "HEAD^"], {
+            encoding: "utf-8",
+          }).trim();
+        } else {
+          console.warn(
+            "Only one commit found, skipping workspace root package analysis"
+          );
+          return { changedPackages: [] };
+        }
+      } catch (gitError) {
+        console.warn("Git fallback failed for workspace root:", gitError);
+        return { changedPackages: [] };
+      }
+    }
+
+    if (!mergeBaseSHA || !headSHA) {
+      console.warn("Could not determine comparison commits for workspace root");
+      return { changedPackages: [] };
+    }
+
     const workspacePackageJson = path.relative(
       process.cwd(),
       path.join(workspaceRoot, "package.json")
     );
 
-    const packageDiff = execFileSync(
-      "git",
-      ["diff", `${mergeBaseSHA}..${headSHA}`, workspacePackageJson],
-      { encoding: "utf-8" }
-    );
+    try {
+      const packageDiff = execFileSync(
+        "git",
+        ["diff", `${mergeBaseSHA}..${headSHA}`, workspacePackageJson],
+        { encoding: "utf-8" }
+      );
 
-    if (packageDiff.trim()) {
-      const changedDeps = parsePackageJsonDiff(packageDiff);
-      return { changedPackages: changedDeps };
+      if (packageDiff.trim()) {
+        const changedDeps = parsePackageJsonDiff(packageDiff);
+        return { changedPackages: changedDeps };
+      }
+    } catch (diffError) {
+      console.warn(
+        `Failed to get diff for workspace package.json, trying alternative approach:`,
+        diffError
+      );
+
+      // Alternative: check if the file exists and analyze current content
+      try {
+        const currentContent = execFileSync(
+          "git",
+          ["show", `${headSHA}:${workspacePackageJson}`],
+          { encoding: "utf-8" }
+        );
+
+        const packageJson = JSON.parse(currentContent);
+        const allDeps = {
+          ...packageJson.dependencies,
+          ...packageJson.devDependencies,
+          ...packageJson.peerDependencies,
+        };
+
+        // Add all dependencies as potentially changed
+        const allDepNames = Object.keys(allDeps);
+        console.warn(
+          `Added all ${allDepNames.length} dependencies from workspace root as potentially changed`
+        );
+        return { changedPackages: allDepNames };
+      } catch (showError) {
+        console.warn(
+          `Could not analyze workspace root package.json:`,
+          showError
+        );
+      }
     }
   } catch (error) {
     console.warn("Failed to check workspace root package.json:", error);
