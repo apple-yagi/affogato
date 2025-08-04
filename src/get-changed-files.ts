@@ -64,6 +64,9 @@ export async function getChangedFilesWithPackages(
     f.endsWith("package.json")
   );
 
+  console.log("Changed files:", changedFiles);
+  console.log("package.json files:", packageJsonFiles);
+
   if (packageJsonFiles.length === 0) {
     return { changedPackages: [], changedFiles };
   }
@@ -80,6 +83,8 @@ export async function getChangedFilesWithPackages(
         { encoding: "utf-8" }
       );
 
+      console.log("package diff: ", packageDiff);
+
       // Parse the diff to find changed dependencies
       const changedDeps = parsePackageJsonDiff(packageDiff);
       changedPackages.push(...changedDeps);
@@ -94,8 +99,13 @@ export async function getChangedFilesWithPackages(
   };
 }
 
-function parsePackageJsonDiff(diff: string): string[] {
+export function parsePackageJsonDiff(diff: string): string[] {
   const changedPackages: string[] = [];
+
+  if (!diff || !diff.trim()) {
+    return changedPackages;
+  }
+
   const lines = diff.split("\n");
 
   for (let i = 0; i < lines.length; i++) {
@@ -106,11 +116,14 @@ function parsePackageJsonDiff(diff: string): string[] {
     // Example: -    "react": "^17.0.0"
     //          +    "react": "^18.0.0"
     if (line.startsWith("-") || line.startsWith("+")) {
-      const match = line.match(/[+-]\s*"([^"]+)":\s*"[^"]+"/);
+      // More robust regex that handles various quote styles and whitespace
+      const match = line.match(
+        /^[+-]\s*["']([^"']+)["']:\s*["'][^"']*["'][,]?/
+      );
       if (match && match[1]) {
-        const packageName = match[1];
+        const packageName = match[1].trim();
         // Only include if it's in dependencies/devDependencies section
-        if (isInDependenciesSection(lines, i)) {
+        if (packageName && isInDependenciesSection(lines, i)) {
           changedPackages.push(packageName);
         }
       }
@@ -120,34 +133,63 @@ function parsePackageJsonDiff(diff: string): string[] {
   return [...new Set(changedPackages)];
 }
 
-function isInDependenciesSection(lines: string[], lineIndex: number): boolean {
+export function isInDependenciesSection(
+  lines: string[],
+  lineIndex: number
+): boolean {
   // Look backwards to find the section header
+  let foundDependenciesSection = false;
+  let braceDepth = 0;
+
+  // Track current depth relative to the line we're checking
   for (let i = lineIndex; i >= 0; i--) {
     const line = lines[i];
     if (!line) continue;
 
     const trimmedLine = line.trim();
+
+    // Count braces to understand nesting (going backwards, so reverse the counting)
+    const openBraces = (line.match(/\{/g) || []).length;
+    const closeBraces = (line.match(/\}/g) || []).length;
+    braceDepth += closeBraces - openBraces;
+
+    // Check if we found a dependencies section header at the current nesting level
     if (
-      trimmedLine.includes('"dependencies":') ||
-      trimmedLine.includes('"devDependencies":') ||
-      trimmedLine.includes('"peerDependencies":') ||
-      trimmedLine.includes('"optionalDependencies":')
+      braceDepth <= 0 &&
+      (trimmedLine.includes('"dependencies":') ||
+        trimmedLine.includes('"devDependencies":') ||
+        trimmedLine.includes('"peerDependencies":') ||
+        trimmedLine.includes('"optionalDependencies":') ||
+        trimmedLine.includes("'dependencies':") ||
+        trimmedLine.includes("'devDependencies':") ||
+        trimmedLine.includes("'peerDependencies':") ||
+        trimmedLine.includes("'optionalDependencies':"))
     ) {
-      return true;
+      foundDependenciesSection = true;
+      break;
     }
-    // If we hit another section or closing brace, we're not in dependencies
+
+    // If we hit another section at the same level and haven't found dependencies yet
     if (
-      trimmedLine.startsWith('"') &&
-      trimmedLine.includes('":') &&
+      braceDepth <= 0 &&
+      trimmedLine.match(/^["'][^"'\n]+["']:\s*\{/) &&
       !trimmedLine.includes("dependencies")
     ) {
-      return false;
+      break;
+    }
+
+    // If we go too deep in nesting, we're not in the right context
+    if (braceDepth > 2) {
+      break;
     }
   }
-  return false;
+
+  return foundDependenciesSection;
 }
 
-function findWorkspaceRoot(startPath: string = process.cwd()): string | null {
+export function findWorkspaceRoot(
+  startPath: string = process.cwd()
+): string | null {
   let currentPath = path.resolve(startPath);
   const root = path.parse(currentPath).root;
 
