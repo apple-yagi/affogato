@@ -1,5 +1,11 @@
 # affogato
 
+## 0.2.1
+
+### Patch Changes
+
+- eeb3800: feat: enhance workspace root package analysis with GitHub API fallback
+
 ## 0.2.0
 
 ### Minor Changes
