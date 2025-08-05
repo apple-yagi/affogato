@@ -118,12 +118,18 @@ export function parsePackageJsonDiff(diff: string): string[] {
     if (line.startsWith("-") || line.startsWith("+")) {
       // More robust regex that handles various quote styles and whitespace
       const match = line.match(
-        /^[+-]\s*["']([^"']+)["']:\s*["'][^"']*["'][,]?/
+        /^[+-]\s*["\']([^"']+)["\']:\s*["\'][^"']*["\'][,]?/
       );
       if (match && match[1]) {
         const packageName = match[1].trim();
-        // Only include if it's in dependencies/devDependencies section
-        if (packageName && isInDependenciesSection(lines, i)) {
+
+        // Use a hybrid approach: check for dependency sections when available,
+        // but also use intelligent filtering for package-like names
+        if (
+          packageName &&
+          (isInDependenciesSection(lines, i) ||
+            isLikelyPackageName(packageName))
+        ) {
           changedPackages.push(packageName);
         }
       }
@@ -133,58 +139,108 @@ export function parsePackageJsonDiff(diff: string): string[] {
   return [...new Set(changedPackages)];
 }
 
+function isLikelyPackageName(name: string): boolean {
+  // Standard package.json fields that are NOT dependencies
+  const knownNonDependencyFields = [
+    "name",
+    "version",
+    "description",
+    "main",
+    "module",
+    "types",
+    "scripts",
+    "keywords",
+    "author",
+    "license",
+    "homepage",
+    "repository",
+    "bugs",
+    "engines",
+    "browserslist",
+    "publishConfig",
+    "config",
+    "private",
+    "workspaces",
+    "files",
+    "bin",
+    "directories",
+    "man",
+    "preferGlobal",
+    "cpu",
+    "os",
+    "funding",
+    "exports",
+    "imports",
+  ];
+
+  // If it's a known non-dependency field, it's not a package
+  if (knownNonDependencyFields.includes(name)) {
+    return false;
+  }
+
+  // Package names typically:
+  // - Don't start with uppercase (except scoped packages starting with @)
+  // - Contain letters, numbers, hyphens, dots, underscores
+  // - Are not typical configuration field names
+  const packageNamePattern =
+    /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+  return packageNamePattern.test(name);
+}
+
 export function isInDependenciesSection(
   lines: string[],
   lineIndex: number
 ): boolean {
-  // Look backwards to find the section header
-  let foundDependenciesSection = false;
-  let braceDepth = 0;
+  // Standard package.json dependency sections
+  const dependencySections = [
+    '"dependencies":',
+    '"devDependencies":',
+    '"peerDependencies":',
+    '"optionalDependencies":',
+    "'dependencies':",
+    "'devDependencies':",
+    "'peerDependencies':",
+    "'optionalDependencies':",
+  ];
 
-  // Track current depth relative to the line we're checking
+  // Look backwards from the current line to find dependency section markers
   for (let i = lineIndex; i >= 0; i--) {
     const line = lines[i];
     if (!line) continue;
 
     const trimmedLine = line.trim();
 
-    // Count braces to understand nesting (going backwards, so reverse the counting)
-    const openBraces = (line.match(/\{/g) || []).length;
-    const closeBraces = (line.match(/\}/g) || []).length;
-    braceDepth += closeBraces - openBraces;
+    // Check for dependency section headers (both in git diff context and regular JSON)
+    for (const section of dependencySections) {
+      if (trimmedLine.includes(section)) {
+        return true;
+      }
 
-    // Check if we found a dependencies section header at the current nesting level
-    if (
-      braceDepth <= 0 &&
-      (trimmedLine.includes('"dependencies":') ||
-        trimmedLine.includes('"devDependencies":') ||
-        trimmedLine.includes('"peerDependencies":') ||
-        trimmedLine.includes('"optionalDependencies":') ||
-        trimmedLine.includes("'dependencies':") ||
-        trimmedLine.includes("'devDependencies':") ||
-        trimmedLine.includes("'peerDependencies':") ||
-        trimmedLine.includes("'optionalDependencies':"))
-    ) {
-      foundDependenciesSection = true;
-      break;
+      // Also check lines with +/- prefix (git diff format)
+      const lineWithoutPrefix = trimmedLine.replace(/^[+-]\s*/, "");
+      if (lineWithoutPrefix.includes(section)) {
+        return true;
+      }
     }
 
-    // If we hit another section at the same level and haven't found dependencies yet
-    if (
-      braceDepth <= 0 &&
-      trimmedLine.match(/^["'][^"'\n]+["']:\s*\{/) &&
-      !trimmedLine.includes("dependencies")
-    ) {
-      break;
+    // If we hit a closing brace or different section, continue looking
+    // as dependencies might be in a previous section
+    if (trimmedLine === "}" || trimmedLine === "},") {
+      continue;
     }
 
-    // If we go too deep in nesting, we're not in the right context
-    if (braceDepth > 2) {
-      break;
+    // Stop if we hit a different top-level section
+    if (
+      trimmedLine.match(/^["\'][^"'\n]+["\']:\s*\{/) &&
+      !dependencySections.some((section) =>
+        trimmedLine.includes(section.replace(/['"]/g, ""))
+      )
+    ) {
+      return false;
     }
   }
 
-  return foundDependenciesSection;
+  return false;
 }
 
 export function findWorkspaceRoot(
