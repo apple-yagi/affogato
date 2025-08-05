@@ -118,39 +118,18 @@ export function parsePackageJsonDiff(diff: string): string[] {
     if (line.startsWith("-") || line.startsWith("+")) {
       // More robust regex that handles various quote styles and whitespace
       const match = line.match(
-        /^[+-]\s*["']([^"']+)["']:\s*["'][^"']*["'][,]?/
+        /^[+-]\s*["\']([^"']+)["\']:\s*["\'][^"']*["\'][,]?/
       );
       if (match && match[1]) {
         const packageName = match[1].trim();
-        // For git diff of package.json, we can be more permissive
-        // Most package name-like fields in package.json are likely dependencies
-        // Exclude common non-dependency fields
-        const excludedFields = [
-          "name",
-          "version",
-          "description",
-          "main",
-          "module",
-          "types",
-          "scripts",
-          "keywords",
-          "author",
-          "license",
-          "homepage",
-          "repository",
-          "bugs",
-          "engines",
-          "browserslist",
-          "publishConfig",
-          "config",
-          "private",
-          "workspaces",
-          "files",
-          "bin",
-          "directories",
-        ];
 
-        if (packageName && !excludedFields.includes(packageName)) {
+        // Use a hybrid approach: check for dependency sections when available,
+        // but also use intelligent filtering for package-like names
+        if (
+          packageName &&
+          (isInDependenciesSection(lines, i) ||
+            isLikelyPackageName(packageName))
+        ) {
           changedPackages.push(packageName);
         }
       }
@@ -160,67 +139,107 @@ export function parsePackageJsonDiff(diff: string): string[] {
   return [...new Set(changedPackages)];
 }
 
+function isLikelyPackageName(name: string): boolean {
+  // Standard package.json fields that are NOT dependencies
+  const knownNonDependencyFields = [
+    "name",
+    "version",
+    "description",
+    "main",
+    "module",
+    "types",
+    "scripts",
+    "keywords",
+    "author",
+    "license",
+    "homepage",
+    "repository",
+    "bugs",
+    "engines",
+    "browserslist",
+    "publishConfig",
+    "config",
+    "private",
+    "workspaces",
+    "files",
+    "bin",
+    "directories",
+    "man",
+    "preferGlobal",
+    "cpu",
+    "os",
+    "funding",
+    "exports",
+    "imports",
+  ];
+
+  // If it's a known non-dependency field, it's not a package
+  if (knownNonDependencyFields.includes(name)) {
+    return false;
+  }
+
+  // Package names typically:
+  // - Don't start with uppercase (except scoped packages starting with @)
+  // - Contain letters, numbers, hyphens, dots, underscores
+  // - Are not typical configuration field names
+  const packageNamePattern =
+    /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+  return packageNamePattern.test(name);
+}
+
 export function isInDependenciesSection(
   lines: string[],
   lineIndex: number
 ): boolean {
-  // For git diff format, we need to look at the context differently
-  // Look backwards from the current line to find dependency section markers
+  // Standard package.json dependency sections
+  const dependencySections = [
+    '"dependencies":',
+    '"devDependencies":',
+    '"peerDependencies":',
+    '"optionalDependencies":',
+    "'dependencies':",
+    "'devDependencies':",
+    "'peerDependencies':",
+    "'optionalDependencies':",
+  ];
 
+  // Look backwards from the current line to find dependency section markers
   for (let i = lineIndex; i >= 0; i--) {
     const line = lines[i];
     if (!line) continue;
 
     const trimmedLine = line.trim();
 
-    // Check for dependency section headers in git diff context
-    // Git diff shows context lines without +/- prefix
-    if (
-      trimmedLine.includes('"dependencies":') ||
-      trimmedLine.includes('"devDependencies":') ||
-      trimmedLine.includes('"peerDependencies":') ||
-      trimmedLine.includes('"optionalDependencies":') ||
-      trimmedLine.includes("'dependencies':") ||
-      trimmedLine.includes("'devDependencies':") ||
-      trimmedLine.includes("'peerDependencies':") ||
-      trimmedLine.includes("'optionalDependencies':")
-    ) {
-      return true;
+    // Check for dependency section headers (both in git diff context and regular JSON)
+    for (const section of dependencySections) {
+      if (trimmedLine.includes(section)) {
+        return true;
+      }
+
+      // Also check lines with +/- prefix (git diff format)
+      const lineWithoutPrefix = trimmedLine.replace(/^[+-]\s*/, "");
+      if (lineWithoutPrefix.includes(section)) {
+        return true;
+      }
     }
 
-    // For git diff, also check lines with +/- prefix
-    const lineWithoutPrefix = trimmedLine.replace(/^[+-]\s*/, "");
-    if (
-      lineWithoutPrefix.includes('"dependencies":') ||
-      lineWithoutPrefix.includes('"devDependencies":') ||
-      lineWithoutPrefix.includes('"peerDependencies":') ||
-      lineWithoutPrefix.includes('"optionalDependencies":') ||
-      lineWithoutPrefix.includes("'dependencies':") ||
-      lineWithoutPrefix.includes("'devDependencies':") ||
-      lineWithoutPrefix.includes("'peerDependencies':") ||
-      lineWithoutPrefix.includes("'optionalDependencies':")
-    ) {
-      return true;
+    // If we hit a closing brace or different section, continue looking
+    // as dependencies might be in a previous section
+    if (trimmedLine === "}" || trimmedLine === "},") {
+      continue;
     }
 
     // Stop if we hit a different top-level section
     if (
-      trimmedLine.match(/^["'][^"'\n]+["']:\s*\{/) &&
-      !trimmedLine.includes("dependencies")
-    ) {
-      return false;
-    }
-
-    // Also check lines with +/- prefix for other sections
-    if (
-      lineWithoutPrefix.match(/^["'][^"'\n]+["']:\s*\{/) &&
-      !lineWithoutPrefix.includes("dependencies")
+      trimmedLine.match(/^["\'][^"'\n]+["\']:\s*\{/) &&
+      !dependencySections.some((section) =>
+        trimmedLine.includes(section.replace(/['"]/g, ""))
+      )
     ) {
       return false;
     }
   }
 
-  // If we haven't found a dependencies section by now, return false
   return false;
 }
 
