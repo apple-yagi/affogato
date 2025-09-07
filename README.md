@@ -46,8 +46,8 @@ jobs:
 
 | Name       | Description                                                          | Required | Default           |
 | ---------- | -------------------------------------------------------------------- | -------- | ----------------- |
-| `token`    | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes    | —                 |
-| `tsconfig` | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No     | `./tsconfig.json` |
+| `token`    | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes   | —                 |
+| `tsconfig` | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No    | `./tsconfig.json` |
 
 ## 📤 Outputs
 
@@ -59,7 +59,7 @@ jobs:
 
 1. affogato uses the GitHub API (via token) to detect changed files between the base and head commits.
 2. If tsconfig is provided (or defaulted), it parses the TypeScript project and resolves module dependencies.
-3. Based on the dependency graph, it finds test files (e.g. *.(test|spec).(ts|tsx)) affected by the change.
+3. Based on the dependency graph, it finds test files (e.g. \*.(test|spec).(ts|tsx)) affected by the change.
 4. The list of affected test files is returned via the affected_tests output.
 
 ## 📄 License

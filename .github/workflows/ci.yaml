@@ -24,12 +24,14 @@ jobs:
           node-version: 22
       - run: npx corepack enable pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run format:check
+      - run: pnpm run editorconfig
       - run: pnpm oxlint
       - run: pnpm run typecheck
-      - uses: apple-yagi/test-scope@v0.0.1
-        id: test_scope
+      - uses: apple-yagi/affogato@v0.0.3
+        id: affogato
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - if: steps.test_scope.outputs.affected_tests != ''
-        run: pnpm run test ${{ steps.test_scope.outputs.affected_tests }}
+      - if: steps.affogato.outputs.affected_tests != ''
+        run: pnpm run test ${{ steps.affogato.outputs.affected_tests }}
       - run: pnpm run build

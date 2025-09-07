@@ -1,0 +1,54 @@
+# EditorConfig is awesome: https://editorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Ignore generated files
+[dist/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+# TypeScript and JavaScript files
+[*.{ts,tsx,js,jsx}]
+indent_style = space
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_style = space
+indent_size = 2
+
+# YAML files
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+indent_style = space
+indent_size = 2
+
+# Package files
+[{package.json,*.lock}]
+indent_style = space
+indent_size = 2
+
+# Config files
+[*.config.{js,ts,mjs,cjs}]
+indent_style = space
+indent_size = 2
+
+# Test files
+[*.{test,spec}.{ts,tsx,js,jsx}]
+indent_style = space
+indent_size = 2
