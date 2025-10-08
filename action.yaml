@@ -9,6 +9,10 @@ inputs:
   token:
     description: "GitHub token for API access."
     required: true
+  test_patterns:
+    description: "Comma-separated list of test file patterns (e.g., 'test,spec,stories'). Default is 'test,spec'."
+    required: false
+    default: "test,spec"
 outputs:
   affected_tests:
     description: "List of affected test files"
