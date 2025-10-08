@@ -4,7 +4,8 @@ import { Project, SourceFile } from "ts-morph";
 
 export function getAffectedTestFiles(
   changedFiles: string[],
-  projectOrPath: string | Project = "tsconfig.json"
+  projectOrPath: string | Project = "tsconfig.json",
+  testPatterns: string = "test,spec"
 ): string[] {
   const isProjectPath = typeof projectOrPath === "string";
   const tsConfigPath = isProjectPath ? path.resolve(projectOrPath) : undefined;
@@ -55,9 +56,16 @@ export function getAffectedTestFiles(
     }
   }
 
+  // Build regex pattern from test patterns
+  const patterns = testPatterns
+    .split(",")
+    .map((p) => p.trim())
+    .filter((p) => p);
+  const regexPattern = new RegExp(`\\.(${patterns.join("|")})\\.(ts|tsx)$`);
+
   return (
     Array.from(affected)
-      .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
+      .filter((f) => regexPattern.test(f))
       .filter((f) => fs.existsSync(f)) // Filter out deleted files
       .map((absPath) => path.relative(basePath, absPath))
       // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.

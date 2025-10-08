@@ -259581,7 +259581,7 @@ exports.getAffectedTestFiles = getAffectedTestFiles;
 const node_path_1 = __importDefault(__nccwpck_require__(6760));
 const node_fs_1 = __importDefault(__nccwpck_require__(3024));
 const ts_morph_1 = __nccwpck_require__(3425);
-function getAffectedTestFiles(changedFiles, projectOrPath = "tsconfig.json") {
+function getAffectedTestFiles(changedFiles, projectOrPath = "tsconfig.json", testPatterns = "test,spec") {
     const isProjectPath = typeof projectOrPath === "string";
     const tsConfigPath = isProjectPath ? node_path_1.default.resolve(projectOrPath) : undefined;
     const basePath = isProjectPath ? node_path_1.default.dirname(tsConfigPath) : process.cwd();
@@ -259622,8 +259622,11 @@ function getAffectedTestFiles(changedFiles, projectOrPath = "tsconfig.json") {
             }
         }
     }
+    // Build regex pattern from test patterns
+    const patterns = testPatterns.split(',').map(p => p.trim()).filter(p => p);
+    const regexPattern = new RegExp(`\\.(${patterns.join('|')})\\.(ts|tsx)$`);
     return (Array.from(affected)
-        .filter((f) => /\.(test|spec)\.(ts|tsx)$/.test(f))
+        .filter((f) => regexPattern.test(f))
         .filter((f) => node_fs_1.default.existsSync(f)) // Filter out deleted files
         .map((absPath) => node_path_1.default.relative(basePath, absPath))
         // If the relative path starts with '..', it might belong to another package in a monorepo environment, so filter it out.
@@ -259702,7 +259705,7 @@ const get_changed_files_js_1 = __nccwpck_require__(3322);
 const get_affected_tests_js_1 = __nccwpck_require__(4042);
 const core_1 = __nccwpck_require__(9999);
 const node_path_1 = __importDefault(__nccwpck_require__(6760));
-const run = async (tsconfig, token) => {
+const run = async (tsconfig, token, testPatterns) => {
     const changedFiles = await (0, get_changed_files_js_1.getChangedFiles)(token);
     if (changedFiles.length === 0) {
         console.log("No changed files found.");
@@ -259710,7 +259713,7 @@ const run = async (tsconfig, token) => {
     }
     console.log("Changed files:", changedFiles);
     console.log("Using tsconfig:", node_path_1.default.resolve(tsconfig));
-    const affectedTestFiles = (0, get_affected_tests_js_1.getAffectedTestFiles)(changedFiles, node_path_1.default.resolve(tsconfig));
+    const affectedTestFiles = (0, get_affected_tests_js_1.getAffectedTestFiles)(changedFiles, node_path_1.default.resolve(tsconfig), testPatterns);
     console.log("Affected test files:", affectedTestFiles);
     return affectedTestFiles;
 };
@@ -259718,7 +259721,8 @@ const run = async (tsconfig, token) => {
     try {
         const tsconfig = (0, core_1.getInput)("tsconfig");
         const token = (0, core_1.getInput)("token", { required: true });
-        const results = await run(tsconfig, token);
+        const testPatterns = (0, core_1.getInput)("test_patterns");
+        const results = await run(tsconfig, token, testPatterns);
         if (results.length === 0) {
             console.log("No affected test files found.");
             return;

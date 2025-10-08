@@ -77,3 +77,64 @@ test("deleted test files are filtered out from affected tests", () => {
     "fixtures/src/hoge.test.ts",
   ]);
 });
+
+test("test pattern filtering: uses default test,spec patterns", () => {
+  const project = loadProjectFromCase();
+
+  const changedFiles = [path.resolve("fixtures/src/foo.ts")];
+
+  // When no test patterns specified, should use default "test,spec"
+  const result = getAffectedTestFiles(changedFiles, project);
+
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
+  ]);
+});
+
+test("test pattern filtering: filters by single pattern (stories)", () => {
+  const project = loadProjectFromCase();
+
+  // Create a mock for stories files
+  const changedFiles = [path.resolve("fixtures/src/foo.ts")];
+
+  const result = getAffectedTestFiles(changedFiles, project, "stories");
+
+  // Since we don't have .stories.ts files in fixtures, expect empty result
+  expect(result).toStrictEqual([]);
+});
+
+test("test pattern filtering: filters by multiple patterns", () => {
+  const project = loadProjectFromCase();
+
+  const changedFiles = [
+    path.resolve("fixtures/src/foo.ts"),
+    path.resolve("fixtures/src/bar.ts"),
+  ];
+
+  // Should find files matching test or spec pattern
+  const result = getAffectedTestFiles(
+    changedFiles,
+    project,
+    "test,spec,stories"
+  );
+
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/bar.test.ts",
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
+  ]);
+});
+
+test("test pattern filtering: handles spaces in pattern list", () => {
+  const project = loadProjectFromCase();
+
+  const changedFiles = [path.resolve("fixtures/src/foo.ts")];
+
+  const result = getAffectedTestFiles(changedFiles, project, "test , spec ");
+
+  expect(result.sort()).toStrictEqual([
+    "fixtures/src/foo.test.ts",
+    "fixtures/src/hoge.test.ts",
+  ]);
+});
