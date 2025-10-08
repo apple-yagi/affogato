@@ -40,14 +40,40 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: npm install
       - run: npm run test ${{ steps.affogato.outputs.affected_tests }}
+
+```
+
+### Example: Storybook Tests
+
+To run Storybook tests for affected story files:
+
+```yaml
+- uses: apple-yagi/affogato@v1
+  id: affogato
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    test_patterns: "stories"
+```
+
+### Example: Multiple Test Patterns
+
+To include multiple test file patterns:
+
+```yaml
+- uses: apple-yagi/affogato@v1
+  id: affogato
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    test_patterns: "test,spec,stories,e2e"
 ```
 
 ## ⚙️ Inputs
 
-| Name       | Description                                                          | Required | Default           |
-| ---------- | -------------------------------------------------------------------- | -------- | ----------------- |
-| `token`    | GitHub Token to fetch changed files using the GitHub API             | ✅ Yes   | —                 |
-| `tsconfig` | Path to the project's `tsconfig.json` used for dependency resolution | ❌ No    | `./tsconfig.json` |
+| Name           | Description                                                                    | Required | Default           |
+| -------------- | ------------------------------------------------------------------------------ | -------- | ----------------- |
+| `token`        | GitHub Token to fetch changed files using the GitHub API                      | ✅ Yes   | —                 |
+| `tsconfig`     | Path to the project's `tsconfig.json` used for dependency resolution          | ❌ No    | `./tsconfig.json` |
+| `test_patterns`| Comma-separated list of test file patterns (e.g., 'test', 'spec', 'stories')  | ❌ No    | `test,spec`       |
 
 ## 📤 Outputs
 
@@ -59,7 +85,7 @@ jobs:
 
 1. affogato uses the GitHub API (via token) to detect changed files between the base and head commits.
 2. If tsconfig is provided (or defaulted), it parses the TypeScript project and resolves module dependencies.
-3. Based on the dependency graph, it finds test files (e.g. \*.(test|spec).(ts|tsx)) affected by the change.
+3. Based on the dependency graph, it finds test files matching your specified patterns (default: \*.(test|spec).(ts|tsx)) affected by the change.
 4. The list of affected test files is returned via the affected_tests output.
 
 ## 📄 License
