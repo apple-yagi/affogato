@@ -40,7 +40,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: npm install
       - run: npm run test ${{ steps.affogato.outputs.affected_tests }}
-
 ```
 
 ### Example: Storybook Tests
@@ -69,11 +68,11 @@ To include multiple test file patterns:
 
 ## ⚙️ Inputs
 
-| Name           | Description                                                                    | Required | Default           |
-| -------------- | ------------------------------------------------------------------------------ | -------- | ----------------- |
-| `token`        | GitHub Token to fetch changed files using the GitHub API                      | ✅ Yes   | —                 |
-| `tsconfig`     | Path to the project's `tsconfig.json` used for dependency resolution          | ❌ No    | `./tsconfig.json` |
-| `test_patterns`| Comma-separated list of test file patterns (e.g., 'test', 'spec', 'stories')  | ❌ No    | `test,spec`       |
+| Name            | Description                                                                  | Required | Default           |
+| --------------- | ---------------------------------------------------------------------------- | -------- | ----------------- |
+| `token`         | GitHub Token to fetch changed files using the GitHub API                     | ✅ Yes   | —                 |
+| `tsconfig`      | Path to the project's `tsconfig.json` used for dependency resolution         | ❌ No    | `./tsconfig.json` |
+| `test_patterns` | Comma-separated list of test file patterns (e.g., 'test', 'spec', 'stories') | ❌ No    | `test,spec`       |
 
 ## 📤 Outputs
 
