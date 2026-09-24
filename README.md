@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: apple-yagi/affogato@v1
+      - uses: apple-yagi/affogato@v0.0.5
         id: affogato
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,7 +47,7 @@ jobs:
 To run Storybook tests for affected story files:
 
 ```yaml
-- uses: apple-yagi/affogato@v1
+- uses: apple-yagi/affogato@v0.0.5
   id: affogato
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +59,7 @@ To run Storybook tests for affected story files:
 To include multiple test file patterns:
 
 ```yaml
-- uses: apple-yagi/affogato@v1
+- uses: apple-yagi/affogato@v0.0.5
   id: affogato
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
