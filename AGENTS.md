@@ -8,7 +8,7 @@
 
 ## Build, Test, and Development Commands
 
-- `pnpm install` ensures dependencies match `pnpm-lock.yaml`. Use Node 20+ as declared in `package.json`.
+- `pnpm install` ensures dependencies match `pnpm-lock.yaml`. Use Node 24+ as declared in `package.json`.
 - `pnpm build` runs `ncc` to bundle `src/` into `dist/` and generates `licenses.txt`.
 - `pnpm test` executes the Vitest suite; combine with `--watch` or `--runInBand` as needed.
 - `pnpm typecheck` runs `tsc --noEmit` under the strict compiler settings from `tsconfig.json`.
