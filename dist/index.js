@@ -259623,8 +259623,11 @@ function getAffectedTestFiles(changedFiles, projectOrPath = "tsconfig.json", tes
         }
     }
     // Build regex pattern from test patterns
-    const patterns = testPatterns.split(',').map(p => p.trim()).filter(p => p);
-    const regexPattern = new RegExp(`\\.(${patterns.join('|')})\\.(ts|tsx)$`);
+    const patterns = testPatterns
+        .split(",")
+        .map((p) => p.trim())
+        .filter((p) => p);
+    const regexPattern = new RegExp(`\\.(${patterns.join("|")})\\.(ts|tsx)$`);
     return (Array.from(affected)
         .filter((f) => regexPattern.test(f))
         .filter((f) => node_fs_1.default.existsSync(f)) // Filter out deleted files
