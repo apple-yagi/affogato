@@ -33,7 +33,9 @@ export async function getChangedFiles(token: string): Promise<string[]> {
     if (baseSHA) {
       // HEAD^ does not exist in a shallow clone (actions/checkout default), while
       // base.sha is fetched right below
-      console.warn("⚠️ Could not retrieve merge base. Falling back to base SHA");
+      console.warn(
+        "⚠️ Could not retrieve merge base. Falling back to base SHA"
+      );
       mergeBaseSHA = baseSHA;
     } else {
       console.warn("⚠️ Could not retrieve merge base. Falling back to HEAD^");
