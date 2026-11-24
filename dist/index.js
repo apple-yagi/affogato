@@ -259684,10 +259684,10 @@ async function getChangedFiles(token) {
         stdio: "inherit",
     });
     // ⚠️ Command-line injection safe: separate args prevent injection of malicious SHAs
-    const diffOutput = (0, node_child_process_1.execFileSync)("git", ["diff", "--name-only", `${mergeBaseSHA}..${headSHA}`], { encoding: "utf-8" });
+    const diffOutput = (0, node_child_process_1.execFileSync)("git", ["diff", "--name-only", "-z", `${mergeBaseSHA}..${headSHA}`], { encoding: "utf-8" });
+    // -z: avoid Git's default quoting of non-ASCII paths ("\346\227...") which breaks the extension filter
     const changedFiles = diffOutput
-        .split("\n")
-        .map((file) => file.trim())
+        .split("\0")
         .filter((f) => /\.(ts|tsx)$/.test(f));
     return changedFiles;
 }

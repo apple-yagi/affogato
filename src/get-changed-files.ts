@@ -45,13 +45,13 @@ export async function getChangedFiles(token: string): Promise<string[]> {
   // ⚠️ Command-line injection safe: separate args prevent injection of malicious SHAs
   const diffOutput = execFileSync(
     "git",
-    ["diff", "--name-only", `${mergeBaseSHA}..${headSHA}`],
+    ["diff", "--name-only", "-z", `${mergeBaseSHA}..${headSHA}`],
     { encoding: "utf-8" }
   );
 
+  // -z: avoid Git's default quoting of non-ASCII paths ("\346\227...") which breaks the extension filter
   const changedFiles = diffOutput
-    .split("\n")
-    .map((file) => file.trim())
+    .split("\0")
     .filter((f) => /\.(ts|tsx)$/.test(f));
 
   return changedFiles;
