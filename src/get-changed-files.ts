@@ -19,7 +19,7 @@ export async function getChangedFiles(token: string): Promise<string[]> {
         Accept: "application/vnd.github+json",
       },
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => undefined);
     if (!response.ok) {
       console.warn(
         `⚠️ Compare API failed: ${response.status} ${data?.message ?? ""}`
