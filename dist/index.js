@@ -259665,16 +259665,30 @@ async function getChangedFiles(token) {
             },
         });
         const data = await response.json();
-        mergeBaseSHA = data.merge_base_commit?.sha;
+        if (!response.ok) {
+            console.warn(`⚠️ Compare API failed: ${response.status} ${data?.message ?? ""}`);
+        }
+        mergeBaseSHA = data?.merge_base_commit?.sha;
     }
-    // Fallback if merge base is unavailable (e.g., direct push)
+    // Fallback if merge base is unavailable
     if (!mergeBaseSHA || mergeBaseSHA === "null") {
-        console.warn("⚠️ Could not retrieve merge base. Falling back to HEAD^");
-        // ⚠️ Use execFileSync with argument array to avoid command-line injection
-        // This prevents shell interpretation of user-controlled input like SHAs
-        mergeBaseSHA = (0, node_child_process_1.execFileSync)("git", ["rev-parse", "HEAD^"], {
-            encoding: "utf-8",
-        }).trim();
+        if (baseSHA) {
+            // HEAD^ does not exist in a shallow clone (actions/checkout default), while
+            // base.sha is fetched right below
+            console.warn("⚠️ Could not retrieve merge base. Falling back to base SHA");
+            mergeBaseSHA = baseSHA;
+        }
+        else {
+            console.warn("⚠️ Could not retrieve merge base. Falling back to HEAD^");
+            // ⚠️ Use execFileSync with argument array to avoid command-line injection
+            // This prevents shell interpretation of user-controlled input like SHAs
+            (0, node_child_process_1.execFileSync)("git", ["fetch", "--depth=2", "origin", headSHA], {
+                stdio: "inherit",
+            });
+            mergeBaseSHA = (0, node_child_process_1.execFileSync)("git", ["rev-parse", "HEAD^"], {
+                encoding: "utf-8",
+            }).trim();
+        }
     }
     if (!mergeBaseSHA || !headSHA) {
         throw new Error("Could not determine base or head commit SHA.");
